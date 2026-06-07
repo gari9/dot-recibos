@@ -92,3 +92,13 @@ input,button,select,textarea{font-family:inherit;color:inherit;font-size:var(--t
 .bottomnav button .bn-tx{font-size:10.5px;font-weight:700;}
 .bottomnav button.on{color:var(--dot-blue);}
 .bottomnav button.on .bn-ico{opacity:1;transform:translateY(-1px);}
+
+/* ===== v1.0: logo, acciones de historial ===== */
+.logo-row{display:flex;align-items:center;gap:var(--s3);}
+.logo-prev{width:54px;height:54px;border-radius:var(--r-sm);object-fit:cover;border:1px solid var(--dot-line);background:var(--dot-base);}
+.empty-logo{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dot-muted);text-align:center;}
+.hist-row{align-items:center;}
+.hist-actions{display:flex;align-items:center;gap:var(--s2);}
+.ha{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--dot-base);border:1px solid var(--dot-line);border-radius:var(--r-sm);color:var(--dot-white);font-size:15px;cursor:pointer;transition:.15s;}
+.ha:hover{border-color:var(--dot-blue);}
+.ha.pdf{font-size:11px;font-weight:800;color:var(--dot-blue);}
