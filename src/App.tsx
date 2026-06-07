@@ -17,8 +17,10 @@ const money = (n: number) =>
 
 const blankItem = (): Item => ({ id: crypto.randomUUID(), desc: '', qty: 1, price: 0 })
 
+type Tab = 'crear' | 'historial' | 'ajustes'
+
 export default function App() {
-  const [tab, setTab] = useState<'crear' | 'historial'>('crear')
+  const [tab, setTab] = useState<Tab>('crear')
   const [issuer, setIssuer] = useState<Issuer>({ name: '', detail: '' })
   const [docType, setDocType] = useState<'recibo' | 'presupuesto'>('recibo')
   const [client, setClient] = useState('')
@@ -87,15 +89,11 @@ export default function App() {
     window.open(`https://wa.me/?text=${encodeURIComponent(buildText(doc))}`, '_blank')
     reset()
   }
+  const justSave = () => { if (save()) reset() }
+  const reset = () => { setClient(''); setItems([blankItem()]); setTab('historial') }
 
-  const justSave = () => {
-    if (save()) reset()
-  }
-
-  const reset = () => {
-    setClient('')
-    setItems([blankItem()])
-    setTab('historial')
+  const resendDoc = (d: Doc) => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(buildText(d))}`, '_blank')
   }
 
   return (
@@ -103,45 +101,28 @@ export default function App() {
       <div className="wrap">
         <header className="head">
           <div className="brand">
-            <h1>Recibos <span className="accent">by dot</span></h1>
-            <p>Recibos y presupuestos en segundos</p>
+            <h1>{issuer.name.trim() ? issuer.name : <>Recibos <span className="accent">by dot</span></>}</h1>
+            <p>{tab === 'crear' ? 'Nuevo comprobante' : tab === 'historial' ? 'Comprobantes emitidos' : 'Ajustes'}</p>
           </div>
           <span className="sig">dot<span className="dot">&bull;</span></span>
         </header>
 
-        <div className="tabs">
-          <button className={tab === 'crear' ? 'on' : ''} onClick={() => setTab('crear')}>Crear</button>
-          <button className={tab === 'historial' ? 'on' : ''} onClick={() => setTab('historial')}>
-            Historial{history.length ? ` (${history.length})` : ''}
-          </button>
-        </div>
-
-        {tab === 'crear' ? (
+        {tab === 'crear' && (
           <>
             <div className="card">
-              <h2>Tus <span className="accent">datos</span></h2>
-              <div className="f">
-                <label className="label">Nombre / Negocio</label>
-                <input className="inp" value={issuer.name} onChange={(e) => saveIssuer({ ...issuer, name: e.target.value })} placeholder="Tomas Griglio / Mi Negocio" />
-              </div>
-              <div className="f">
-                <label className="label">Contacto (tel, CUIT, dir.)</label>
-                <input className="inp" value={issuer.detail} onChange={(e) => saveIssuer({ ...issuer, detail: e.target.value })} placeholder="Tel 351... · CUIT 20-..." />
-                <p className="hint">Se guarda para la proxima vez.</p>
+              <h2>Tipo de <span className="accent">comprobante</span></h2>
+              <div className="seg">
+                <button className={docType === 'recibo' ? 'on' : ''} onClick={() => setDocType('recibo')}>Recibo</button>
+                <button className={docType === 'presupuesto' ? 'on' : ''} onClick={() => setDocType('presupuesto')}>Presupuesto</button>
               </div>
             </div>
 
             <div className="card">
-              <h2>Comprobante</h2>
-              <div className="tabs" style={{ marginBottom: 14 }}>
-                <button className={docType === 'recibo' ? 'on' : ''} onClick={() => setDocType('recibo')}>Recibo</button>
-                <button className={docType === 'presupuesto' ? 'on' : ''} onClick={() => setDocType('presupuesto')}>Presupuesto</button>
-              </div>
+              <h2>Cliente e <span className="accent">items</span></h2>
               <div className="f">
                 <label className="label">Cliente</label>
                 <input className="inp" value={client} onChange={(e) => setClient(e.target.value)} placeholder="Nombre del cliente" />
               </div>
-
               <div className="items-head">
                 <span className="label">Items</span>
                 <button className="add-link" onClick={addItem}>+ Agregar item</button>
@@ -154,36 +135,51 @@ export default function App() {
                   <button className="rm" onClick={() => rmItem(it.id)} aria-label="Quitar">&times;</button>
                 </div>
               ))}
-
               <div className="total-row">
                 <span className="l">Total</span>
                 <span className="v">{money(total)}</span>
               </div>
             </div>
-
             <footer className="foot">Hecho por dot<span className="dot">&bull;</span> &middot; @dot.sfco</footer>
           </>
-        ) : (
+        )}
+
+        {tab === 'historial' && (
           <>
             {history.length === 0 ? (
               <div className="empty">
                 <div className="big">&#129534;</div>
-                Todavia no generaste comprobantes.<br />Crea uno desde la pestana <b>Crear</b>.
+                Todavia no generaste comprobantes.<br />Crea uno desde <b>Crear</b>.
               </div>
             ) : (
               history.map((d) => (
-                <div className="hist-row" key={d.id}>
+                <div className="hist-row" key={d.id} onClick={() => resendDoc(d)}>
                   <div>
-                    <div className="who">
-                      {d.client}
-                      <span className={`badge ${d.type}`}>{d.type === 'recibo' ? 'Recibo' : 'Presup.'}</span>
-                    </div>
-                    <div className="meta">N° {String(d.number).padStart(4, '0')} &middot; {d.date} &middot; {d.items.length} item(s)</div>
+                    <div className="who">{d.client}<span className={`badge ${d.type}`}>{d.type === 'recibo' ? 'Recibo' : 'Presup.'}</span></div>
+                    <div className="meta">N° {String(d.number).padStart(4, '0')} &middot; {d.date} &middot; {d.items.length} item(s) &middot; toca para reenviar</div>
                   </div>
                   <div className="amt">{money(d.total)}</div>
                 </div>
               ))
             )}
+            <footer className="foot">Hecho por dot<span className="dot">&bull;</span> &middot; @dot.sfco</footer>
+          </>
+        )}
+
+        {tab === 'ajustes' && (
+          <>
+            <div className="card">
+              <h2>Mis <span className="accent">datos</span></h2>
+              <div className="f">
+                <label className="label">Nombre / Negocio</label>
+                <input className="inp" value={issuer.name} onChange={(e) => saveIssuer({ ...issuer, name: e.target.value })} placeholder="Tomas Griglio / Mi Negocio" />
+              </div>
+              <div className="f">
+                <label className="label">Contacto (tel, CUIT, direccion)</label>
+                <input className="inp" value={issuer.detail} onChange={(e) => saveIssuer({ ...issuer, detail: e.target.value })} placeholder="Tel 351... · CUIT 20-..." />
+                <p className="hint">Aparece en el encabezado de cada comprobante. Se guarda automaticamente.</p>
+              </div>
+            </div>
             <footer className="foot">Hecho por dot<span className="dot">&bull;</span> &middot; @dot.sfco</footer>
           </>
         )}
@@ -195,6 +191,15 @@ export default function App() {
           <button className="btn btn-ghost" onClick={justSave} disabled={!canSave}>Guardar</button>
         </div>
       )}
+
+      <nav className="bottomnav">
+        <button className={tab === 'crear' ? 'on' : ''} onClick={() => setTab('crear')}>
+          <span className="bn-ico">&#9998;</span><span className="bn-tx">Crear</span></button>
+        <button className={tab === 'historial' ? 'on' : ''} onClick={() => setTab('historial')}>
+          <span className="bn-ico">&#128220;</span><span className="bn-tx">Historial</span></button>
+        <button className={tab === 'ajustes' ? 'on' : ''} onClick={() => setTab('ajustes')}>
+          <span className="bn-ico">&#9881;</span><span className="bn-tx">Ajustes</span></button>
+      </nav>
     </div>
   )
 }
